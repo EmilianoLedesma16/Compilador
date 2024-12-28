@@ -1,49 +1,41 @@
 import re
 
-# Definición de patrones para tokens del lenguaje
-TOKEN_REGEX = [
-    (r'\b(inicio|fin|var|imprimir|if|else|for|while|do|leer)\b', 'KEYWORD'),  # Palabras clave
-    (r'\b\d+\b', 'NUMBER'),  # Números enteros
-    (r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', 'IDENTIFIER'),  # Identificadores
-    (r'[+\-*/=<>!]+', 'OPERATOR'),  # Operadores
-    (r'[{}();]', 'SYMBOL'),  # Símbolos especiales
-    (r'".*?"', 'STRING'),  # Cadenas
-    (r'\s+', None),  # Ignorar espacios y tabulaciones
-]
-
 class Lexer:
-    def __init__(self, text):
-        self.text = text
+    def __init__(self, source_code):
+        self.source_code = source_code
         self.tokens = []
+        self.current_position = 0
 
     def tokenize(self):
-        """Convierte el texto fuente en una lista de tokens."""
-        while self.text:
-            match = None
-            for regex, token_type in TOKEN_REGEX:
-                match = re.match(regex, self.text)
-                if match:
-                    if token_type:  # Si no es un token ignorado
-                        self.tokens.append((token_type, match.group(0)))
-                    self.text = self.text[match.end():]  # Avanzar en el texto
-                    break
-            if not match:
-                raise Exception(f"Token no reconocido: {self.text[:10]}")
+        keywords = {"inicio", "fin", "var", "imprimir", "leer", "if", "else", "for", "while", "do"}
+        token_specification = [
+            ("NUMBER",   r'\b\d+\b'),                     # Números
+            ("IDENTIFIER", r'\b[a-zA-Z_][a-zA-Z0-9_]*\b'), # Identificadores
+            ("OPERATOR", r'[+\-*/=<>!]'),                  # Operadores
+            ("SYMBOL",   r'[{}();]'),                       # Símbolos
+            ("STRING",   r'".*?"'),                       # Cadenas
+            ("SKIP",     r'[ \t]+'),                       # Espacios y tabulaciones
+            ("NEWLINE",  r'\n'),                           # Nueva línea
+            ("MISMATCH", r'.')                              # Caracteres no válidos
+        ]
+        token_regex = '|'.join(f'(?P<{pair[0]}>{pair[1]})' for pair in token_specification)
+        line_number = 1
+        line_start = 0
+
+        for mo in re.finditer(token_regex, self.source_code):
+            kind = mo.lastgroup
+            value = mo.group()
+            column = mo.start() - line_start
+            if kind == "NEWLINE":
+                line_number += 1
+                line_start = mo.end()
+            elif kind == "SKIP":
+                continue
+            elif kind == "MISMATCH":
+                raise RuntimeError(f"Error léxico: '{value}' inesperado en línea {line_number}, columna {column}.")
+            elif kind == "IDENTIFIER" and value in keywords:
+                kind = "KEYWORD"
+            self.tokens.append((kind, value, line_number, column))
         return self.tokens
 
-# Prueba rápida del analizador léxico
-if __name__ == "__main__":
-    code = """
-    inicio {
-        var x = 10;
-        imprimir(x);
-        if (x > 5) {
-            imprimir("Mayor que 5");
-        }
-    } fin
-    """
-
-    lexer = Lexer(code)
-    tokens = lexer.tokenize()
-    for token in tokens:
-        print(token)
+# Este archivo ahora espera que el usuario proporcione dinámicamente el código fuente para analizar.

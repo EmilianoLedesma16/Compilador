@@ -3,65 +3,57 @@ from tkinter import messagebox
 from lexico import Lexer
 from sintactico import Parser
 from semantico import SemanticAnalyzer
-from simulador import Interpreter
+from simulador import Simulator
 
-def compile_code():
-    code = code_text.get("1.0", tk.END).strip()
-    output_text.delete("1.0", tk.END)
+def run_compiler():
+    source_code = code_text.get("1.0", tk.END).strip()
 
-    if not code:
-        messagebox.showwarning("Advertencia", "El área de código está vacía.")
+    if not source_code:
+        messagebox.showerror("Error", "El código fuente está vacío.")
         return
 
     try:
-        # Fase 1: Análisis Léxico
-        lexer = Lexer(code)
+        # Análisis léxico
+        lexer = Lexer(source_code)
         tokens = lexer.tokenize()
-        output_text.insert(tk.END, "Tokens:\n")
-        output_text.insert(tk.END, "\n".join(map(str, tokens)) + "\n\n")
 
-        # Fase 2: Análisis Sintáctico
+        # Análisis sintáctico
         parser = Parser(tokens)
         ast = parser.parse_program()
-        output_text.insert(tk.END, "AST:\n")
-        output_text.insert(tk.END, str(ast) + "\n\n")
 
-        # Fase 3: Análisis Semántico
-        analyzer = SemanticAnalyzer()
-        analyzer.analyze(ast)
-        output_text.insert(tk.END, "Análisis Semántico: Completado\n")
-        output_text.insert(tk.END, f"Tabla de Símbolos: {analyzer.symbol_table.symbols}\n\n")
+        # Análisis semántico
+        semantic_analyzer = SemanticAnalyzer()
+        semantic_analyzer.analyze(ast)
 
-        # Fase 4: Interpretación
-        interpreter = Interpreter()
-        interpreter.interpret(ast)
-        output_text.insert(tk.END, "Interpretación Completada\n")
-        output_text.insert(tk.END, f"Estado Final de la Tabla de Símbolos: {interpreter.symbol_table}\n")
+        # Simulación
+        simulator = Simulator(semantic_analyzer)
+        simulator.run(ast)
 
+        output_text.insert(tk.END, "\nCompilación y ejecución completadas con éxito.\n")
     except Exception as e:
-        output_text.insert(tk.END, f"Error: {str(e)}\n")
+        output_text.insert(tk.END, f"\nError: {str(e)}\n")
 
-# Crear ventana principal
+# Interfaz gráfica
 root = tk.Tk()
-root.title("Compilador Personalizado")
+root.title("Compilador de Lenguaje Personalizado")
+root.geometry("800x600")
 
-# Área de texto para el código fuente
-code_label = tk.Label(root, text="Código Fuente:")
-code_label.pack()
-
-code_text = tk.Text(root, height=15, width=80)
-code_text.pack()
+# Etiqueta y cuadro de texto para el código fuente
+tk.Label(root, text="Código Fuente:", font=("Arial", 12, "bold")).pack(pady=5)
+code_text = tk.Text(root, wrap="word", font=("Consolas", 10), height=20)
+code_text.pack(fill="both", padx=10, pady=5, expand=True)
 
 # Botón para compilar
-compile_button = tk.Button(root, text="Compilar", command=compile_code)
-compile_button.pack()
+compile_button = tk.Button(
+    root, text="Compilar y Ejecutar", font=("Arial", 12, "bold"), bg="#4CAF50", fg="white",
+    command=run_compiler
+)
+compile_button.pack(pady=10)
 
-# Área de texto para la salida
-output_label = tk.Label(root, text="Salida:")
-output_label.pack()
+# Etiqueta y cuadro de texto para la salida
+tk.Label(root, text="Salida:", font=("Arial", 12, "bold")).pack(pady=5)
+output_text = tk.Text(root, wrap="word", font=("Consolas", 10), height=10, state="normal", bg="#f4f4f4")
+output_text.pack(fill="both", padx=10, pady=5, expand=True)
 
-output_text = tk.Text(root, height=15, width=80, state=tk.NORMAL)
-output_text.pack()
-
-# Ejecutar la interfaz gráfica
+# Iniciar la aplicación
 root.mainloop()
