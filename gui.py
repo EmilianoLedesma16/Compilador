@@ -5,35 +5,51 @@ from sintactico import Parser
 from semantico import SemanticAnalyzer
 from simulador import Simulator
 
+
 def run_compiler():
-    source_code = code_text.get("1.0", tk.END).strip()
+    source_code = code_text.get("1.0", tk.END).strip()  # Obtener código del área de texto
 
     if not source_code:
         messagebox.showerror("Error", "El código fuente está vacío.")
         return
 
     try:
-        # Análisis léxico
+        output_text.delete("1.0", tk.END)  # Limpiar salida anterior
+
+        # Etapa 1: Análisis Léxico
         lexer = Lexer(source_code)
         tokens = lexer.tokenize()
+        output_text.insert(tk.END, "Análisis léxico completado.\nTokens generados:\n")
+        for token in tokens:
+            output_text.insert(tk.END, f"{token}\n")
 
-        # Análisis sintáctico
+        # Etapa 2: Análisis Sintáctico
         parser = Parser(tokens)
         ast = parser.parse_program()
+        if isinstance(ast, str):  # Si devuelve un error sintáctico
+            output_text.insert(tk.END, f"Error Sintáctico: {ast}\n")
+            return
+        output_text.insert(tk.END, "Análisis sintáctico completado.\n")
 
-        # Análisis semántico
+        # Etapa 3: Análisis Semántico
         semantic_analyzer = SemanticAnalyzer()
-        semantic_analyzer.analyze(ast)
+        semantic_result = semantic_analyzer.analyze(ast)
+        if "Error" in semantic_result:  # Si devuelve un error semántico
+            output_text.insert(tk.END, f"Error Semántico: {semantic_result}\n")
+            return
+        output_text.insert(tk.END, "Análisis semántico completado.\n")
 
-        # Simulación
+        # Etapa 4: Simulación
         simulator = Simulator(semantic_analyzer)
-        simulator.run(ast)
+        simulation_result = simulator.run(ast)
+        output_text.insert(tk.END, "Ejecución completada.\n")
+        output_text.insert(tk.END, f"Salida:\n{simulation_result}\n")
 
-        output_text.insert(tk.END, "\nCompilación y ejecución completadas con éxito.\n")
     except Exception as e:
-        output_text.insert(tk.END, f"\nError: {str(e)}\n")
+        output_text.insert(tk.END, f"Error inesperado: {str(e)}\n")
 
-# Interfaz gráfica
+
+# Crear ventana principal
 root = tk.Tk()
 root.title("Compilador de Lenguaje Personalizado")
 root.geometry("800x600")
@@ -45,15 +61,20 @@ code_text.pack(fill="both", padx=10, pady=5, expand=True)
 
 # Botón para compilar
 compile_button = tk.Button(
-    root, text="Compilar y Ejecutar", font=("Arial", 12, "bold"), bg="#4CAF50", fg="white",
+    root,
+    text="Compilar y Ejecutar",
+    font=("Arial", 12, "bold"),
+    bg="#4CAF50",
+    fg="white",
     command=run_compiler
 )
 compile_button.pack(pady=10)
 
 # Etiqueta y cuadro de texto para la salida
 tk.Label(root, text="Salida:", font=("Arial", 12, "bold")).pack(pady=5)
-output_text = tk.Text(root, wrap="word", font=("Consolas", 10), height=10, state="normal", bg="#f4f4f4")
+output_text = tk.Text(root, wrap="word", font=("Consolas", 10), height=10, bg="#f4f4f4", state="normal")
 output_text.pack(fill="both", padx=10, pady=5, expand=True)
 
-# Iniciar la aplicación
-root.mainloop()
+# Ejecutar la aplicación
+if __name__ == "__main__":
+    root.mainloop()

@@ -9,14 +9,14 @@ class Lexer:
     def tokenize(self):
         keywords = {"inicio", "fin", "var", "imprimir", "leer", "if", "else", "for", "while", "do"}
         token_specification = [
-            ("NUMBER",   r'\b\d+\b'),                     # Números
-            ("IDENTIFIER", r'\b[a-zA-Z_][a-zA-Z0-9_]*\b'), # Identificadores
-            ("OPERATOR", r'[+\-*/=<>!]'),                  # Operadores
-            ("SYMBOL",   r'[{}();]'),                       # Símbolos
-            ("STRING",   r'".*?"'),                       # Cadenas
-            ("SKIP",     r'[ \t]+'),                       # Espacios y tabulaciones
-            ("NEWLINE",  r'\n'),                           # Nueva línea
-            ("MISMATCH", r'.')                              # Caracteres no válidos
+            ("NUMBER", r'\b\d+\b'),                       # Números
+            ("IDENTIFIER", r'\b[a-zA-Z_][\w]*\b'),        # Identificadores (Unicode soportado con \w)
+            ("OPERATOR", r'[+\-*/=<>!]'),                 # Operadores
+            ("SYMBOL", r'[{}();]'),                       # Símbolos
+            ("STRING", r'"[^"\n]*"?'),                   # Cadenas (detecta no cerradas también)
+            ("SKIP", r'[ \t]+'),                          # Espacios y tabulaciones
+            ("NEWLINE", r'\n'),                           # Nueva línea
+            ("MISMATCH", r'.'),                           # Caracteres no válidos
         ]
         token_regex = '|'.join(f'(?P<{pair[0]}>{pair[1]})' for pair in token_specification)
         line_number = 1
@@ -26,16 +26,26 @@ class Lexer:
             kind = mo.lastgroup
             value = mo.group()
             column = mo.start() - line_start
+
             if kind == "NEWLINE":
                 line_number += 1
                 line_start = mo.end()
             elif kind == "SKIP":
                 continue
+            elif kind == "STRING" and not value.endswith('"'):
+                raise RuntimeError(f"Error léxico: Cadena no cerrada en línea {line_number}: {value}")
             elif kind == "MISMATCH":
-                raise RuntimeError(f"Error léxico: '{value}' inesperado en línea {line_number}, columna {column}.")
+                context = self.source_code.splitlines()[line_number - 1]
+                raise RuntimeError(f"Error léxico: Caracter inesperado '{value}' en línea {line_number}, columna {column}. Contexto: {context}")
             elif kind == "IDENTIFIER" and value in keywords:
                 kind = "KEYWORD"
             self.tokens.append((kind, value, line_number, column))
+        
+        # Log para depuración
+        print("Tokens generados:")
+        for token in self.tokens:
+            print(token)
+        
         return self.tokens
 
-# Este archivo ahora espera que el usuario proporcione dinámicamente el código fuente para analizar.
+# Este archivo ahora ofrece un manejo más robusto de errores y soporta caracteres Unicode.

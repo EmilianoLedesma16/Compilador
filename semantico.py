@@ -11,84 +11,126 @@ from sintactico import (
     NumberNode
 )
 
+class SemanticError(Exception):
+    """Clase personalizada para errores semánticos."""
+    def __init__(self, message, line, column):
+        super().__init__(message)
+        self.message = message
+        self.line = line
+        self.column = column
+
+    def __str__(self):
+        return f"Línea {self.line}, Columna {self.column}: {self.message}"
+
 
 class SemanticAnalyzer:
     def __init__(self):
-        self.symbol_table = {}
+        # Pila de tablas de símbolos para manejar ámbitos
+        self.symbol_table_stack = [{}]
+
+    def current_symbol_table(self):
+        """Obtiene la tabla de símbolos del ámbito actual."""
+        return self.symbol_table_stack[-1]
+
+    def push_scope(self):
+        """Crea un nuevo ámbito."""
+        self.symbol_table_stack.append({})
+
+    def pop_scope(self):
+        """Elimina el ámbito actual."""
+        self.symbol_table_stack.pop()
 
     def analyze(self, ast):
+        try:
+            self._analyze(ast)
+        except SemanticError as e:
+            return str(e)  # Devuelve el error como texto
+        return "Análisis semántico completado sin errores."
+
+    def _analyze(self, ast):
         if isinstance(ast, ProgramNode):
-            self.analyze(ast.block)
+            self._analyze(ast.block)
         elif isinstance(ast, BlockNode):
+            self.push_scope()
             for statement in ast.statements:
-                self.analyze(statement)
+                self._analyze(statement)
+            self.pop_scope()
         elif isinstance(ast, DeclarationNode):
-            self.analyze_declaration(ast)
+            self._analyze_declaration(ast)
         elif isinstance(ast, PrintNode):
-            self.analyze_expression(ast.expression)
+            self._analyze_expression(ast.expression)
         elif isinstance(ast, IfNode):
-            self.analyze_if(ast)
+            self._analyze_if(ast)
         elif isinstance(ast, ForNode):
-            self.analyze_for(ast)
+            self._analyze_for(ast)
         elif isinstance(ast, WhileNode):
-            self.analyze_while(ast)
+            self._analyze_while(ast)
         elif isinstance(ast, BinaryOpNode):
-            self.analyze_binary_op(ast)
+            self._analyze_binary_op(ast)
         elif isinstance(ast, IdentifierNode):
-            self.analyze_identifier(ast)
+            self._analyze_identifier(ast)
         elif isinstance(ast, NumberNode):
-            pass  # Los números son siempre válidos
+            pass  # Los números siempre son válidos
         else:
-            raise Exception(f"Error semántico: Nodo no reconocido '{type(ast).__name__}'.")
+            raise SemanticError(f"Nodo no reconocido: '{type(ast).__name__}'.", 0, 0)
 
-    def analyze_declaration(self, node):
-        if node.identifier in self.symbol_table:
-            raise Exception(f"Error semántico: La variable '{node.identifier}' ya está declarada.")
-        value_type = self.evaluate_expression(node.expression)
-        self.symbol_table[node.identifier] = value_type
+    def _analyze_declaration(self, node):
+        current_table = self.current_symbol_table()
+        if node.identifier in current_table:
+            raise SemanticError(
+                f"La variable '{node.identifier}' ya está declarada en este ámbito.",
+                0, 0
+            )
+        value_type = self._evaluate_expression(node.expression)
+        current_table[node.identifier] = value_type
 
-    def analyze_if(self, node):
-        condition_type = self.evaluate_expression(node.condition)
+    def _analyze_if(self, node):
+        condition_type = self._evaluate_expression(node.condition)
         if condition_type != 'number':
-            raise Exception("Error semántico: La condición del 'if' debe ser un número (0 para falso, diferente de 0 para verdadero).")
-        self.analyze(node.true_block)
+            raise SemanticError(
+                "La condición del 'if' debe ser un número (0 para falso, diferente de 0 para verdadero).",
+                0, 0
+            )
+        self._analyze(node.true_block)
         if node.false_block:
-            self.analyze(node.false_block)
+            self._analyze(node.false_block)
 
-    def analyze_for(self, node):
-        self.analyze(node.initialization)
-        condition_type = self.evaluate_expression(node.condition)
+    def _analyze_for(self, node):
+        self._analyze(node.initialization)
+        condition_type = self._evaluate_expression(node.condition)
         if condition_type != 'number':
-            raise Exception("Error semántico: La condición del 'for' debe ser un número.")
-        self.evaluate_expression(node.update)
-        self.analyze(node.body)
+            raise SemanticError("La condición del 'for' debe ser un número.", 0, 0)
+        self._evaluate_expression(node.update)
+        self._analyze(node.body)
 
-    def analyze_while(self, node):
-        condition_type = self.evaluate_expression(node.condition)
+    def _analyze_while(self, node):
+        condition_type = self._evaluate_expression(node.condition)
         if condition_type != 'number':
-            raise Exception("Error semántico: La condición del 'while' debe ser un número.")
-        self.analyze(node.body)
+            raise SemanticError("La condición del 'while' debe ser un número.", 0, 0)
+        self._analyze(node.body)
 
-    def analyze_binary_op(self, node):
-        left_type = self.evaluate_expression(node.left)
-        right_type = self.evaluate_expression(node.right)
+    def _analyze_binary_op(self, node):
+        left_type = self._evaluate_expression(node.left)
+        right_type = self._evaluate_expression(node.right)
         if left_type != right_type:
-            raise Exception("Error semántico: Los operandos de una operación deben ser del mismo tipo.")
+            raise SemanticError("Los operandos de una operación deben ser del mismo tipo.", 0, 0)
         return left_type
 
-    def analyze_identifier(self, node):
-        if node.name not in self.symbol_table:
-            raise Exception(f"Error semántico: La variable '{node.name}' no está declarada.")
-        return self.symbol_table[node.name]
+    def _analyze_identifier(self, node):
+        current_table = self.current_symbol_table()
+        if node.name not in current_table:
+            raise SemanticError(
+                f"La variable '{node.name}' no está declarada.",
+                0, 0
+            )
+        return current_table[node.name]
 
-    def evaluate_expression(self, node):
+    def _evaluate_expression(self, node):
         if isinstance(node, NumberNode):
             return 'number'
         elif isinstance(node, IdentifierNode):
-            return self.analyze_identifier(node)
+            return self._analyze_identifier(node)
         elif isinstance(node, BinaryOpNode):
-            return self.analyze_binary_op(node)
+            return self._analyze_binary_op(node)
         else:
-            raise Exception(f"Error semántico: Expresión no válida '{type(node).__name__}'.")
-
-# Este archivo verifica que el AST generado sea semánticamente válido y utiliza una tabla de símbolos para rastrear variables.
+            raise SemanticError(f"Expresión no válida: '{type(node).__name__}'.", 0, 0)
