@@ -1,114 +1,99 @@
-from sintactico import (
-    ProgramNode,
-    BlockNode,
-    DeclarationNode,
-    PrintNode,
-    IfNode,
-    ForNode,
-    WhileNode,
-    BinaryOpNode,
-    IdentifierNode,
-    NumberNode
-)
-
-class RuntimeError(Exception):
-    """Clase personalizada para errores en tiempo de ejecución."""
-    def __init__(self, message, line=0, column=0):
-        super().__init__(message)
-        self.message = message
-        self.line = line
-        self.column = column
-
-    def __str__(self):
-        if self.line > 0 and self.column > 0:
-            return f"Línea {self.line}, Columna {self.column}: {self.message}"
-        return self.message
-
-
 class Simulator:
     def __init__(self, semantic_analyzer):
+        """
+        Inicializa el simulador con los resultados del análisis semántico.
+        :param semantic_analyzer: El analizador semántico con la tabla de símbolos.
+        """
         self.semantic_analyzer = semantic_analyzer
-        self.symbol_table = {}
-        self.output = []  # Acumula la salida para mostrarla en la GUI
+        self.variables = {}  # Almacenará los valores de las variables
 
     def run(self, ast):
+        """
+        Ejecuta el programa a partir del AST generado.
+        :param ast: El árbol de sintaxis abstracta generado por el analizador sintáctico.
+        :return: La salida simulada del programa.
+        """
         try:
-            self._run(ast)
-            return "\n".join(self.output)  # Devuelve la salida acumulada
-        except RuntimeError as e:
-            return str(e)  # Devuelve el error como texto
+            output = self.execute_block(ast)
+            return output
+        except Exception as e:
+            return f"Error en la simulación: {str(e)}"
 
-    def _run(self, ast):
-        if isinstance(ast, ProgramNode):
-            self._run(ast.block)
-        elif isinstance(ast, BlockNode):
-            for statement in ast.statements:
-                self._run(statement)
-        elif isinstance(ast, DeclarationNode):
-            self.run_declaration(ast)
-        elif isinstance(ast, PrintNode):
-            self.run_print(ast)
-        elif isinstance(ast, IfNode):
-            self.run_if(ast)
-        elif isinstance(ast, ForNode):
-            self.run_for(ast)
-        elif isinstance(ast, WhileNode):
-            self.run_while(ast)
-        elif isinstance(ast, BinaryOpNode):
-            return self.run_binary_op(ast)
-        elif isinstance(ast, IdentifierNode):
-            return self.run_identifier(ast)
-        elif isinstance(ast, NumberNode):
-            return int(ast.value)  # Convertir el valor a entero para simplificar
+    def execute_block(self, block):
+        """
+        Ejecuta un bloque de instrucciones.
+        :param block: El bloque de instrucciones en forma de AST.
+        :return: La salida generada por el bloque.
+        """
+        output = ""
+        for statement in block:
+            if statement["type"] == "declaration":
+                self.execute_declaration(statement)
+            elif statement["type"] == "assignment":
+                self.execute_assignment(statement)
+            elif statement["type"] == "print":
+                output += self.execute_print(statement) + "\n"
+        return output
+
+    def execute_declaration(self, statement):
+        """
+        Ejecuta una declaración de variable.
+        :param statement: La instrucción de declaración.
+        """
+        var_name = statement["identifier"]
+        value = self.evaluate_expression(statement["expression"])
+        if var_name in self.variables:
+            raise Exception(f"La variable '{var_name}' ya ha sido declarada.")
+        self.variables[var_name] = value
+
+    def execute_assignment(self, statement):
+        """
+        Ejecuta una asignación de variable.
+        :param statement: La instrucción de asignación.
+        """
+        var_name = statement["identifier"]
+        value = self.evaluate_expression(statement["expression"])
+        if var_name not in self.variables:
+            raise Exception(f"La variable '{var_name}' no ha sido declarada.")
+        self.variables[var_name] = value
+
+    def execute_print(self, statement):
+        """
+        Ejecuta una instrucción de impresión.
+        :param statement: La instrucción de impresión.
+        :return: El valor que se imprimirá.
+        """
+        return str(self.evaluate_expression(statement["expression"]))
+
+    def evaluate_expression(self, expression):
+        """
+        Evalúa una expresión aritmética.
+        :param expression: La expresión en forma de AST.
+        :return: El valor de la expresión.
+        """
+        if expression["type"] == "number":
+            return expression["value"]
+        elif expression["type"] == "identifier":
+            var_name = expression["value"]
+            if var_name not in self.variables:
+                raise Exception(f"La variable '{var_name}' no ha sido declarada.")
+            return self.variables[var_name]
+        elif expression["type"] == "binary_operation":
+            left = self.evaluate_expression(expression["left"])
+            right = self.evaluate_expression(expression["right"])
+            operator = expression["operator"]
+
+            if operator == "+":
+                return left + right
+            elif operator == "-":
+                return left - right
+            elif operator == "*":
+                return left * right
+            elif operator == "/":
+                if right == 0:
+                    raise Exception("Error: División entre cero.")
+                return left / right
+            else:
+                raise Exception(f"Operador desconocido: {operator}")
         else:
-            raise RuntimeError(f"Error en ejecución: Nodo no reconocido '{type(ast).__name__}'.")
-
-    def run_declaration(self, node):
-        value = self.evaluate_expression(node.expression)
-        self.symbol_table[node.identifier] = value
-
-    def run_print(self, node):
-        value = self.evaluate_expression(node.expression)
-        self.output.append(str(value))  # Captura la salida en lugar de imprimir
-
-    def run_if(self, node):
-        condition = self.evaluate_expression(node.condition)
-        if condition != 0:
-            self._run(node.true_block)
-        elif node.false_block:
-            self._run(node.false_block)
-
-    def run_for(self, node):
-        self.run_declaration(node.initialization)
-        while self.evaluate_expression(node.condition) != 0:
-            self._run(node.body)
-            self.evaluate_expression(node.update)
-
-    def run_while(self, node):
-        while self.evaluate_expression(node.condition) != 0:
-            self._run(node.body)
-
-    def run_binary_op(self, node):
-        left = self.evaluate_expression(node.left)
-        right = self.evaluate_expression(node.right)
-
-        if node.operator == '+':
-            return left + right
-        elif node.operator == '-':
-            return left - right
-        elif node.operator == '*':
-            return left * right
-        elif node.operator == '/':
-            if right == 0:
-                raise RuntimeError("División por cero.")
-            return left // right  # División entera
-        else:
-            raise RuntimeError(f"Operador no reconocido '{node.operator}'.")
-
-    def run_identifier(self, node):
-        if node.name not in self.symbol_table:
-            raise RuntimeError(f"La variable '{node.name}' no está definida.")
-        return self.symbol_table[node.name]
-
-    def evaluate_expression(self, node):
-        return self._run(node)
+            raise Exception(f"Tipo de expresión desconocido: {expression['type']}")

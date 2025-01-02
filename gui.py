@@ -25,7 +25,7 @@ def run_compiler():
 
         # Etapa 2: Análisis Sintáctico
         parser = Parser(tokens)
-        ast = parser.parse_program()
+        ast = parser.parse()
         if isinstance(ast, str):  # Si devuelve un error sintáctico
             output_text.insert(tk.END, f"Error Sintáctico: {ast}\n")
             return
