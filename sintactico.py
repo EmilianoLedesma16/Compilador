@@ -7,24 +7,21 @@ class Parser:
 
         # Tabla LL(1)
         self.table = {
-            'Program': {
-                'inicio': ['inicio', '{', 'Block', '}', 'fin']
-            },
+            'Program': {'inicio': ['inicio', '{', 'Block', '}', 'fin']},
             'Block': {
                 'var': ['Statement', 'Block'],
                 'IDENTIFIER': ['Statement', 'Block'],
-                '}': ['ε']  # epsilon
+                'imprimir': ['Statement', 'Block'],
+                '}': ['ε']  # epsilon para finalizar el bloque
             },
             'Statement': {
                 'var': ['Declaration'],
-                'IDENTIFIER': ['Assignment']
+                'IDENTIFIER': ['Assignment'],
+                'imprimir': ['Print']
             },
-            'Declaration': {
-                'var': ['var', 'IDENTIFIER', '=', 'Expression', ';']
-            },
-            'Assignment': {
-                'IDENTIFIER': ['IDENTIFIER', '=', 'Expression', ';']
-            },
+            'Declaration': {'var': ['var', 'IDENTIFIER', '=', 'Expression', ';']},
+            'Assignment': {'IDENTIFIER': ['IDENTIFIER', '=', 'Expression', ';']},
+            'Print': {'imprimir': ['imprimir', 'Expression', ';']},
             'Expression': {
                 'IDENTIFIER': ['Term', "Expression'"],
                 'NUMBER': ['Term', "Expression'"],
@@ -33,7 +30,10 @@ class Parser:
             "Expression'": {
                 '+': ['+', 'Term', "Expression'"],
                 '-': ['-', 'Term', "Expression'"],
-                'ε': ['ε']  # epsilon
+                ';': ['ε'],  # epsilon para finalizar la expresión
+                ')': ['ε'],
+                '}': ['ε'],
+                '$': ['ε']  # Final del archivo
             },
             'Term': {
                 'IDENTIFIER': ['Factor', "Term'"],
@@ -43,7 +43,12 @@ class Parser:
             "Term'": {
                 '*': ['*', 'Factor', "Term'"],
                 '/': ['/', 'Factor', "Term'"],
-                'ε': ['ε']  # epsilon
+                '+': ['ε'],
+                '-': ['ε'],
+                ';': ['ε'],  # epsilon para finalizar el término
+                ')': ['ε'],
+                '}': ['ε'],
+                '$': ['ε']  # Final del archivo
             },
             'Factor': {
                 'NUMBER': ['NUMBER'],
@@ -51,6 +56,8 @@ class Parser:
                 '(': ['(', 'Expression', ')']
             }
         }
+
+        self.ast = []
 
     def advance(self):
         """Avanza al siguiente token."""
@@ -63,37 +70,50 @@ class Parser:
     def raise_error(self, message):
         """Lanza un error sintáctico con contexto claro."""
         line, column = self.current_token[2], self.current_token[3]
-        raise Exception(f"{message} en línea {line}, columna {column}.")
+        raise Exception(f"{message} en línea {line}, columna {column}. Token encontrado: {self.current_token}")
 
     def parse(self):
-        """Inicia el análisis sintáctico."""
-        self.stack.append('Program')  # Añadir el símbolo inicial a la pila
+        """Inicia el análisis sintáctico y genera el AST."""
+        self.stack.append('Program')
+        current_node = {'Program': []}
+        self.ast = [current_node]
+        parent_stack = [current_node['Program']]  # Rastreo de nodos padres
 
         while self.stack:
-            top = self.stack.pop()  # Obtener el elemento superior de la pila
+            top = self.stack.pop()
             print(f"Pila: {self.stack}, Top: {top}, Token actual: {self.current_token}")
 
-            if top == 'ε':  # Simboliza epsilon, no consume nada
+            if top == 'ε':
+                # Ignorar nodos vacíos
                 continue
 
-            if top in self.table:  # Es un no terminal
-                # Usar el valor del token actual (self.current_token[1])
-                production = self.table[top].get(self.current_token[1])
+            if top in self.table:
+                production = self.table[top].get(self.current_token[0]) or self.table[top].get(self.current_token[1])
                 if production is None:
-                    raise Exception(
-                        f"Error: No hay producción para {top} con token {self.current_token}"
-                    )
+                    self.raise_error(f"Error: No hay producción para {top} con token {self.current_token}")
                 print(f"Producción seleccionada para {top}: {production}")
-                self.stack.extend(reversed(production))  # Añadir la producción a la pila
-            elif top == self.current_token[1]:  # Es un terminal que coincide con el valor del token actual
+                self.stack.extend(reversed(production))
+
+                # Agregar un nodo solo si tiene hijos relevantes
+                new_node = {top: []}
+                parent_stack[-1].append(new_node)
+                parent_stack.append(new_node[top])
+
+            elif top == self.current_token[0] or top == self.current_token[1]:
+                # Agregar token al nodo actual
                 print(f"Coincidencia encontrada: {top}")
-                self.advance()  # Avanzar al siguiente token
-            else:  # Error si no hay coincidencia
-                raise Exception(
-                    f"Error: Se esperaba {top}, pero se encontró {self.current_token}"
-                )
+                parent_stack[-1].append(self.current_token)
+                self.advance()
 
-        if self.current_token[0] != '$':  # Aseguramos que se haya consumido toda la entrada
+            else:
+                self.raise_error(f"Error: Se esperaba {top}")
+
+            # Si el nodo actual ya no tiene hijos pendientes, volver al nodo padre
+            while parent_stack and isinstance(parent_stack[-1], list) and not self.stack:
+                parent_stack.pop()
+
+        if self.current_token[0] != '$':
             raise Exception("Error: Entrada no completamente consumida.")
-        print("Análisis sintáctico completado sin errores.")
 
+        print("Análisis sintáctico completado sin errores.")
+        return self.ast

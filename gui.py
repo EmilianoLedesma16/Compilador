@@ -1,80 +1,71 @@
 import tkinter as tk
-from tkinter import messagebox
 from lexico import Lexer
 from sintactico import Parser
 from semantico import SemanticAnalyzer
 from simulador import Simulator
 
-
-def run_compiler():
-    source_code = code_text.get("1.0", tk.END).strip()  # Obtener código del área de texto
-
-    if not source_code:
-        messagebox.showerror("Error", "El código fuente está vacío.")
-        return
-
+def compile_code():
     try:
-        output_text.delete("1.0", tk.END)  # Limpiar salida anterior
+        # Obtener el código fuente desde el área de texto
+        source_code = text_area.get("1.0", "end").strip()
 
-        # Etapa 1: Análisis Léxico
+        if not source_code:
+            raise ValueError("Error: No se ingresó ningún código para compilar.")
+
+        # Análisis léxico
         lexer = Lexer(source_code)
         tokens = lexer.tokenize()
-        output_text.insert(tk.END, "Análisis léxico completado.\nTokens generados:\n")
+        print("Análisis léxico completado.")
+        print("Tokens generados:")
         for token in tokens:
-            output_text.insert(tk.END, f"{token}\n")
+            print(token)
 
-        # Etapa 2: Análisis Sintáctico
+        # Análisis sintáctico
         parser = Parser(tokens)
-        ast = parser.parse()
-        if isinstance(ast, str):  # Si devuelve un error sintáctico
-            output_text.insert(tk.END, f"Error Sintáctico: {ast}\n")
-            return
-        output_text.insert(tk.END, "Análisis sintáctico completado.\n")
+        ast = parser.parse()  # AST generado por el parser
+        print("Análisis sintáctico completado sin errores.")
 
-        # Etapa 3: Análisis Semántico
-        semantic_analyzer = SemanticAnalyzer()
-        semantic_result = semantic_analyzer.analyze(ast)
-        if "Error" in semantic_result:  # Si devuelve un error semántico
-            output_text.insert(tk.END, f"Error Semántico: {semantic_result}\n")
-            return
-        output_text.insert(tk.END, "Análisis semántico completado.\n")
+        # Análisis semántico
+        if not tokens:
+            raise ValueError("Error: No se generaron tokens para el análisis semántico.")
+        
+        semantic_analyzer = SemanticAnalyzer(tokens)
+        semantic_analyzer.analyze()
+        print("Análisis semántico completado sin errores.")
 
-        # Etapa 4: Simulación
+        # Simulación
         simulator = Simulator(semantic_analyzer)
-        simulation_result = simulator.run(ast)
-        output_text.insert(tk.END, "Ejecución completada.\n")
-        output_text.insert(tk.END, f"Salida:\n{simulation_result}\n")
+        output = simulator.run(ast)
+        print("Ejecución simulada completada.")
 
+        # Mostrar resultado en la GUI
+        output_text.configure(state="normal")
+        output_text.delete("1.0", "end")
+        output_text.insert("1.0", f"Análisis completado sin errores.\n\nSalida de la simulación:\n{output}")
+        output_text.configure(state="disabled")
     except Exception as e:
-        output_text.insert(tk.END, f"Error inesperado: {str(e)}\n")
+        # Mostrar el error en la GUI
+        output_text.configure(state="normal")
+        output_text.delete("1.0", "end")
+        output_text.insert("1.0", f"Error: {e}")
+        output_text.configure(state="disabled")
 
-
-# Crear ventana principal
+# Configuración de la ventana principal
 root = tk.Tk()
-root.title("Compilador de Lenguaje Personalizado")
+root.title("Compilador y Simulador")
 root.geometry("800x600")
 
-# Etiqueta y cuadro de texto para el código fuente
-tk.Label(root, text="Código Fuente:", font=("Arial", 12, "bold")).pack(pady=5)
-code_text = tk.Text(root, wrap="word", font=("Consolas", 10), height=20)
-code_text.pack(fill="both", padx=10, pady=5, expand=True)
+# Área de texto para ingresar el código fuente
+text_area = tk.Text(root, wrap="word", height=20, width=90)
+text_area.pack(pady=10)
 
-# Botón para compilar
-compile_button = tk.Button(
-    root,
-    text="Compilar y Ejecutar",
-    font=("Arial", 12, "bold"),
-    bg="#4CAF50",
-    fg="white",
-    command=run_compiler
-)
+# Botón para compilar el código
+compile_button = tk.Button(root, text="Compilar", command=compile_code)
 compile_button.pack(pady=10)
 
-# Etiqueta y cuadro de texto para la salida
-tk.Label(root, text="Salida:", font=("Arial", 12, "bold")).pack(pady=5)
-output_text = tk.Text(root, wrap="word", font=("Consolas", 10), height=10, bg="#f4f4f4", state="normal")
-output_text.pack(fill="both", padx=10, pady=5, expand=True)
+# Área de salida para mostrar mensajes
+output_text = tk.Text(root, wrap="word", height=10, width=90, state="disabled")
+output_text.pack(pady=10)
 
-# Ejecutar la aplicación
-if __name__ == "__main__":
-    root.mainloop()
+# Ejecutar la interfaz
+root.mainloop()
