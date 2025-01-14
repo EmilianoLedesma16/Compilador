@@ -4,7 +4,8 @@
 
 from strings import *
 
-from strings import string
+from strings import string as format_string
+import string
 import os
 import math
 
@@ -30,7 +31,7 @@ class Error:
   def as_string(self):
     result  = f'{self.error_name}: {self.details}\n'
     result += f'File {self.pos_start.fn}, line {self.pos_start.ln + 1}'
-    result += '\n\n' + string(self.pos_start.ftxt, self.pos_start, self.pos_end)
+    result += '\n\n' + format_string(self.pos_start.ftxt, self.pos_start, self.pos_end)
     return result
 
 class IllegalCharError(Error):
@@ -53,7 +54,7 @@ class RTError(Error):
   def as_string(self):
     result  = self.generate_traceback()
     result += f'{self.error_name}: {self.details}'
-    result += '\n\n' + string(self.pos_start.ftxt, self.pos_start, self.pos_end)
+    result += '\n\n' + format_string(self.pos_start.ftxt, self.pos_start, self.pos_end)
     return result
 
   def generate_traceback(self):
@@ -135,8 +136,8 @@ KEYWORDS = [
   'TO',
   'STEP',
   'WHILE',
+  'THEN',  
   'FUN',
-  'THEN',
   'END',
   'RETURN',
   'CONTINUE',
@@ -180,69 +181,72 @@ class Lexer:
     self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
 
   def make_tokens(self):
-    tokens = []
+      tokens = []
 
-    while self.current_char != None:
-      if self.current_char in ' \t':
-        self.advance()
-      elif self.current_char == '#':
-        self.skip_comment()
-      elif self.current_char in ';\n':
-        tokens.append(Token(TT_NEWLINE, pos_start=self.pos))
-        self.advance()
-      elif self.current_char in DIGITS:
-        tokens.append(self.make_number())
-      elif self.current_char in LETTERS:
-        tokens.append(self.make_identifier())
-      elif self.current_char == '"':
-        tokens.append(self.make_string())
-      elif self.current_char == '+':
-        tokens.append(Token(TT_PLUS, pos_start=self.pos))
-        self.advance()
-      elif self.current_char == '-':
-        tokens.append(self.make_minus_or_arrow())
-      elif self.current_char == '*':
-        tokens.append(Token(TT_MUL, pos_start=self.pos))
-        self.advance()
-      elif self.current_char == '/':
-        tokens.append(Token(TT_DIV, pos_start=self.pos))
-        self.advance()
-      elif self.current_char == '^':
-        tokens.append(Token(TT_POW, pos_start=self.pos))
-        self.advance()
-      elif self.current_char == '(':
-        tokens.append(Token(TT_LPAREN, pos_start=self.pos))
-        self.advance()
-      elif self.current_char == ')':
-        tokens.append(Token(TT_RPAREN, pos_start=self.pos))
-        self.advance()
-      elif self.current_char == '[':
-        tokens.append(Token(TT_LSQUARE, pos_start=self.pos))
-        self.advance()
-      elif self.current_char == ']':
-        tokens.append(Token(TT_RSQUARE, pos_start=self.pos))
-        self.advance()
-      elif self.current_char == '!':
-        token, error = self.make_not_equals()
-        if error: return [], error
-        tokens.append(token)
-      elif self.current_char == '=':
-        tokens.append(self.make_equals())
-      elif self.current_char == '<':
-        tokens.append(self.make_less_than())
-      elif self.current_char == '>':
-        tokens.append(self.make_greater_than())
-      elif self.current_char == ',':
-        tokens.append(Token(TT_COMMA, pos_start=self.pos))
-        self.advance()
-      else:
-        pos_start = self.pos.copy()
-        char = self.current_char
-        self.advance()
-        return [], IllegalCharError(pos_start, self.pos, "'" + char + "'")
+      while self.current_char is not None:
+          if self.current_char in ' \t':
+              self.advance()
+          elif self.current_char == '#':
+              self.skip_comment()
+          elif self.current_char in ';\n':
+              tokens.append(Token(TT_NEWLINE, pos_start=self.pos))
+              self.advance()
+          elif self.current_char in DIGITS:
+              tokens.append(self.make_number())
+          elif self.current_char in LETTERS:
+              tokens.append(self.make_identifier())
+          elif self.current_char == '"':
+              tokens.append(self.make_string())
+          elif self.current_char == '+':
+              tokens.append(Token(TT_PLUS, pos_start=self.pos))
+              self.advance()
+          elif self.current_char == '-':
+              tokens.append(self.make_minus_or_arrow())
+          elif self.current_char == '*':
+              tokens.append(Token(TT_MUL, pos_start=self.pos))
+              self.advance()
+          elif self.current_char == '/':
+              tokens.append(Token(TT_DIV, pos_start=self.pos))
+              self.advance()
+          elif self.current_char == '^':
+              tokens.append(Token(TT_POW, pos_start=self.pos))
+              self.advance()
+          elif self.current_char == '(':
+              tokens.append(Token(TT_LPAREN, pos_start=self.pos))
+              self.advance()
+          elif self.current_char == ')':
+              tokens.append(Token(TT_RPAREN, pos_start=self.pos))
+              self.advance()
+          elif self.current_char == '[':
+              tokens.append(Token(TT_LSQUARE, pos_start=self.pos))
+              self.advance()
+          elif self.current_char == ']':
+              tokens.append(Token(TT_RSQUARE, pos_start=self.pos))
+              self.advance()
+          elif self.current_char == '!':
+              token, error = self.make_not_equals()
+              if error:
+                  return [], error
+              tokens.append(token)
+          elif self.current_char == '=':
+              tokens.append(self.make_equals())
+          elif self.current_char == '<':
+              tokens.append(self.make_less_than())
+          elif self.current_char == '>':
+              tokens.append(self.make_greater_than())
+          elif self.current_char == ',':
+              tokens.append(Token(TT_COMMA, pos_start=self.pos))
+              self.advance()
+          else:
+              pos_start = self.pos.copy()
+              char = self.current_char
+              self.advance()
+              return [], IllegalCharError(pos_start, self.pos, "'" + char + "'")
 
-    tokens.append(Token(TT_EOF, pos_start=self.pos))
-    return tokens, None
+      tokens.append(Token(TT_EOF, pos_start=self.pos))
+      #print(f"Tokens generados: {tokens}")
+      return tokens, None
+
 
   def make_number(self):
     num_str = ''
@@ -565,53 +569,54 @@ class Parser:
       self.current_tok = self.tokens[self.tok_idx]
 
   def parse(self):
-    res = self.statements()
-    if not res.error and self.current_tok.type != TT_EOF:
-      return res.failure(InvalidSyntaxError(
-        self.current_tok.pos_start, self.current_tok.pos_end,
-        "Token cannot appear after previous tokens"
-      ))
-    return res
+      res = self.statements()
+      if not res.error and self.current_tok.type != TT_EOF:
+          return res.failure(InvalidSyntaxError(
+              self.current_tok.pos_start, self.current_tok.pos_end,
+              "Token cannot appear after previous tokens"
+          ))
+      return res
+
 
   ###################################
 
   def statements(self):
-    res = ParseResult()
-    statements = []
-    pos_start = self.current_tok.pos_start.copy()
+      res = ParseResult()
+      statements = []
+      pos_start = self.current_tok.pos_start.copy()
 
-    while self.current_tok.type == TT_NEWLINE:
-      res.register_advancement()
-      self.advance()
-
-    statement = res.register(self.statement())
-    if res.error: return res
-    statements.append(statement)
-
-    more_statements = True
-
-    while True:
-      newline_count = 0
+      # Avanzar sobre nuevas líneas iniciales
       while self.current_tok.type == TT_NEWLINE:
-        res.register_advancement()
-        self.advance()
-        newline_count += 1
-      if newline_count == 0:
-        more_statements = False
-      
-      if not more_statements: break
-      statement = res.try_register(self.statement())
-      if not statement:
-        self.reverse(res.to_reverse_count)
-        more_statements = False
-        continue
+          res.register_advancement()
+          self.advance()
+
+      # Procesar una instrucción principal
+      statement = res.register(self.statement())
+      if res.error:
+          return res
       statements.append(statement)
 
-    return res.success(ListNode(
-      statements,
-      pos_start,
-      self.current_tok.pos_end.copy()
-    ))
+      # Procesar instrucciones adicionales
+      while True:
+          newline_count = 0
+
+          # Contar nuevas líneas
+          while self.current_tok.type == TT_NEWLINE:
+              res.register_advancement()
+              self.advance()
+              newline_count += 1
+
+          if newline_count == 0:
+              break
+
+          statement = res.try_register(self.statement())
+          if not statement:
+              self.reverse(res.to_reverse_count)
+              break
+          statements.append(statement)
+
+      return res.success(ListNode(statements, pos_start, self.current_tok.pos_end.copy()))
+
 
   def statement(self):
     res = ParseResult()
@@ -1077,48 +1082,45 @@ class Parser:
     res = ParseResult()
 
     if not self.current_tok.matches(TT_KEYWORD, 'WHILE'):
-      return res.failure(InvalidSyntaxError(
-        self.current_tok.pos_start, self.current_tok.pos_end,
-        f"Expected 'WHILE'"
-      ))
+        return res.failure(InvalidSyntaxError(
+            self.current_tok.pos_start, self.current_tok.pos_end,
+            f"Expected 'WHILE'"
+        ))
 
     res.register_advancement()
     self.advance()
 
+    # Condición del WHILE
     condition = res.register(self.expr())
     if res.error: return res
 
     if not self.current_tok.matches(TT_KEYWORD, 'THEN'):
-      return res.failure(InvalidSyntaxError(
-        self.current_tok.pos_start, self.current_tok.pos_end,
-        f"Expected 'THEN'"
-      ))
+        return res.failure(InvalidSyntaxError(
+            self.current_tok.pos_start, self.current_tok.pos_end,
+            f"Expected 'THEN'"
+        ))
 
     res.register_advancement()
     self.advance()
 
+    # Manejo de NEWLINE
     if self.current_tok.type == TT_NEWLINE:
-      res.register_advancement()
-      self.advance()
+        res.register_advancement()
+        self.advance()
 
-      body = res.register(self.statements())
-      if res.error: return res
-
-      if not self.current_tok.matches(TT_KEYWORD, 'END'):
-        return res.failure(InvalidSyntaxError(
-          self.current_tok.pos_start, self.current_tok.pos_end,
-          f"Expected 'END'"
-        ))
-
-      res.register_advancement()
-      self.advance()
-
-      return res.success(WhileNode(condition, body, True))
-    
-    body = res.register(self.statement())
+    # Cuerpo del WHILE
+    body = res.register(self.statements())
     if res.error: return res
 
-    return res.success(WhileNode(condition, body, False))
+    if not self.current_tok.matches(TT_KEYWORD, 'END'):
+        return res.failure(InvalidSyntaxError(
+            self.current_tok.pos_start, self.current_tok.pos_end,
+            f"Expected 'END'"
+        ))
+
+    res.register_advancement()
+    self.advance()
+    return res.success(WhileNode(condition, body, True))
 
   def func_def(self):
     res = ParseResult()

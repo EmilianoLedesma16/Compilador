@@ -47,3 +47,112 @@ PRINT("El resultado de la multiplicacion es:")
 PRINT(result2)
 PRINT("El resultado de la division es:")
 PRINT(result3)
+
+# EJEMPLO DEL USO DE CICLOS FOR Y DECLARACION DE FUNCION CON FUN
+
+FUN xdify(prefix) -> prefix + "xd"
+
+FUN join(elements, separator)
+	VAR result = ""
+	VAR len = LEN(elements)
+
+	FOR i = 0 TO len THEN
+		VAR result = result + elements/i
+		IF i != len - 1 THEN VAR result = result + separator
+	END
+
+	RETURN result
+END
+
+FUN map(elements, func)
+	VAR new_elements = []
+
+	FOR i = 0 TO LEN(elements) THEN
+		APPEND(new_elements, func(elements/i))
+	END
+
+	RETURN new_elements
+END
+
+PRINT("HOLA MUNDO!")
+
+FOR i = 0 TO 5 THEN
+	PRINT(join(map(["lol", "futbol"], xdify), ", "))
+END
+
+# Ejemplo para probar el compilador
+
+FUN AddSuffix(word, suffix) -> word + suffix
+
+FUN GenerateList(elements, suffix)
+    VAR result = []
+
+    FOR i = 0 TO LEN(elements) THEN
+        APPEND(result, AddSuffix(elements/i, suffix))
+    END
+
+    RETURN result
+END
+
+VAR words = ["casa", "perro", "gato"]
+VAR new_words = GenerateList(words, "-suffix")
+
+PRINT("Palabras originales:")
+PRINT(words)
+
+PRINT("Palabras con sufijo:")
+PRINT(new_words)
+
+#Ejemplo de variables y asignaciones básicas
+VAR x = 5
+PRINT(x)
+
+#Ejemplo de expresiones ARITMETICAS
+VAR result = 10 + 5 * 2
+PRINT(result)
+
+#Ciclos y condicionales
+VAR i = 0
+WHILE i < 3 THEN
+    PRINT(i)
+    VAR i = i + 1
+END
+
+#Funciones
+FUN Square(x) -> x * x
+PRINT(Square(4))
+
+#Errores
+VAR x = 
+PRINT(x)
+
+#Declaracio y uso básico
+VAR a = 10
+VAR b = 5
+VAR sum = a + b
+PRINT("La suma de a y b es:")
+PRINT(sum)
+
+#Ciclos y condicionales
+VAR x = 5
+PRINT("Cuenta regresiva:")
+WHILE x > 0 THEN
+    PRINT(x)
+    VAR x = x - 1
+END
+PRINT("¡Despegue!")
+
+#Funciones y llamadas
+FUN Square(num) -> num * num
+
+FUN Cube(num)
+    RETURN num * num * num
+END
+
+PRINT("El cuadrado de 3 es:")
+PRINT(Square(3))
+
+PRINT("El cubo de 2 es:")
+PRINT(Cube(2))
+
+
