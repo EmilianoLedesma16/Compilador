@@ -1,0 +1,49 @@
+# EJEMPLO DEL USO DE CICLOS FOR Y DECLARACION DE FUNCION CON FUN
+
+FUN oopify(prefix) -> prefix + "oop"
+
+FUN join(elements, separator)
+	VAR result = ""
+	VAR len = LEN(elements)
+
+	FOR i = 0 TO len THEN
+		VAR result = result + elements/i
+		IF i != len - 1 THEN VAR result = result + separator
+	END
+
+	RETURN result
+END
+
+FUN map(elements, func)
+	VAR new_elements = []
+
+	FOR i = 0 TO LEN(elements) THEN
+		APPEND(new_elements, func(elements/i))
+	END
+
+	RETURN new_elements
+END
+
+PRINT("HOLA MUNDO!")
+
+FOR i = 0 TO 5 THEN
+	PRINT(join(map(["l", "sp"], oopify), ", "))
+END
+
+#EJEMPLO PARA USO DE OPERACIONES ARITMETICAS
+
+VAR a = 6
+VAR b = 12
+
+VAR result = a + b
+VAR result1 = a - b
+VAR result2 = a*b
+VAR result3 = b/a
+PRINT("El resultado de la suma es:")
+PRINT(result)
+PRINT("El resultado de la resta es:")
+PRINT(result1)
+PRINT("El resultado de la multiplicacion es:")
+PRINT(result2)
+PRINT("El resultado de la division es:")
+PRINT(result3)

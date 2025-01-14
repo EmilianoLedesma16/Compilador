@@ -1,0 +1,59 @@
+declaracion  : LINEAN* declaracion (LINEAN+ declaracion)* LINEAN*
+
+declaracion	: PALABRA_RES:RETURN expr?
+						: PALABRA_RES:CONTINUE
+						: PALABRA_RES:BREAK
+						: expr
+
+expr        : PALABRA_RES:VAR IDENTIFICADOR EQ expr
+            : comp-expr ((PALABRA_RES:AND|PALABRA_RES:OR) comp-expr)*
+
+comp-expr   : NOT comp-expr
+            : arith-expr ((EE|LT|GT|LTE|GTE) arith-expr)*
+
+expresiones-arit  :	term ((PLUS|MINUS) term)*
+
+term        : factor ((MUL|DIV) factor)*
+
+factor      : (PLUS|MINUS) factor
+            : power
+
+power       : call (POW factor)*
+
+call        : atom (LPAREN (expr (COMMA expr)*)? RPAREN)?
+
+atom        : INT|FLOAT|STRING|IDENTIFICADOR
+            : LPAREN expr RPAREN
+            : list-expr
+            : if-expr
+            : for-expr
+            : while-expr
+            : func-def
+
+list-expr   : LSQUARE (expr (COMMA expr)*)? RSQUARE
+
+if-expr     : PALABRA_RES:IF expr PALABRA_RES:THEN
+              (declaracion if-expr-b|if-expr-c?)
+            | (LINEAN declaracions PALABRA_RES:END|if-expr-b|if-expr-c)
+
+if-expr-b   : PALABRA_RES:ELIF expr PALABRA_RES:THEN
+              (declaracion if-expr-b|if-expr-c?)
+            | (LINEAN declaracions PALABRA_RES:END|if-expr-b|if-expr-c)
+
+if-expr-c   : PALABRA_RES:ELSE
+              declaracion
+            | (LINEAN declaracions PALABRA_RES:END)
+
+for-expr    : PALABRA_RES:FOR IDENTIFICADOR EQ expr PALABRA_RES:TO expr 
+              (PALABRA_RES:STEP expr)? PALABRA_RES:THEN
+              declaracion
+            | (LINEAN declaracions PALABRA_RES:END)
+
+while-expr  : PALABRA_RES:WHILE expr PALABRA_RES:THEN
+              declaracion
+            | (LINEAN declaracions PALABRA_RES:END)
+
+func-def    : PALABRA_RES:FUN IDENTIFICADOR?
+              LPAREN (IDENTIFICADOR (COMMA IDENTIFICADOR)*)? RPAREN
+              (ARROW expr)
+            | (LINEAN declaracions PALABRA_RES:END)
