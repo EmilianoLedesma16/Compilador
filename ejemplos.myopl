@@ -155,4 +155,30 @@ PRINT(Square(3))
 PRINT("El cubo de 2 es:")
 PRINT(Cube(2))
 
+#Error léxico
+VAR x = 10
+VAR y = 20
+VAR z = x $ y  # El símbolo '$' no es reconocido
+PRINT(z)
+
+#Error sintactico
+VAR x = 10
+IF x > 5    # Falta la palabra clave THEN
+    PRINT("x es mayor que 5")
+END
+
+#Error sintáctico
+VAR x = 10
+FOR i = 1 TO 5   # Falta 'THEN' al final de la declaración del FOR
+    PRINT(i)
+END
+
+#Error sintactico
+VAR x = 10
+VAR y =  # Falta un valor en la asignación
+PRINT(x + y)
+
+
+
+
 
