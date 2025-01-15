@@ -1,3 +1,25 @@
+#FUNCIONES PREDEFINIDAS
+
+#APPEND
+VAR mi_lista = [10, 20, 30]  # Definir una lista con valores iniciales
+APPEND(mi_lista, 40)         # Agregar un número a la lista
+PRINT(mi_lista)              # Debería imprimir: [10, 20, 30, 40]
+
+APPEND(mi_lista, "Hola")     # Agregar una cadena a la lista
+PRINT(mi_lista)              # Debería imprimir: [10, 20, 30, 40, "Hola"]
+
+VAR otra_lista = []
+APPEND(otra_lista, 1)        # Agregar a una lista vacía
+APPEND(otra_lista, 2)
+APPEND(otra_lista, 3)
+PRINT(otra_lista)            # Debería imprimir: [1, 2, 3]
+
+#PRINT COMO FUNCIÓN PREDEFINIDA
+PRINT("Hola a la mejor profesora de ESCOM")
+
+#LEN COMO FUNCIÓN PREDEFINIDA
+#PRINT(LEN(["a", "b", "c"]))  # Salida esperada: 3
+
 # EJEMPLO DEL USO DE CICLOS FOR Y DECLARACION DE FUNCION CON FUN
 
 FUN oopify(prefix) -> prefix + "oop"
