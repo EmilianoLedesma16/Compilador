@@ -357,12 +357,9 @@ class Lexer:
     return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
   def skip_comment(self):
-    self.advance()
+      while self.current_char is not None and self.current_char != '\n':
+          self.advance()
 
-    while self.current_char != '\n':
-      self.advance()
-
-    self.advance()
 
 ##############################################################
 # NODOS PARA LA CONSTRUCCIÓN DEL ARBOL DE ANALISIS SINTACTICO
@@ -1392,6 +1389,12 @@ class Number(Value):
   def added_to(self, other):
     if isinstance(other, Number):
       return Number(self.value + other.value).set_context(self.context), None
+    elif isinstance(other, String):
+        return None, RTError(
+            self.pos_start, other.pos_end,
+            'Cannot add a Number to a String',
+            self.context
+        )    
     else:
       return None, Value.illegal_operation(self, other)
 
@@ -1563,18 +1566,20 @@ class List(Value):
       return None, Value.illegal_operation(self, other)
 
   def dived_by(self, other):
-    if isinstance(other, Number):
-      try:
-        return self.elements[other.value], None
-      except:
-        return None, RTError(
-          other.pos_start, other.pos_end,
-          'Element at this index could not be retrieved from list because index is out of bounds',
-          self.context
-        )
-    else:
-      return None, Value.illegal_operation(self, other)
-  
+      if isinstance(other, Number):
+          if other.value == 0:
+              # Retorna un error si el divisor es cero
+              return None, RTError(
+                  other.pos_start, other.pos_end,
+                  'Division by zero',
+                  self.context
+              )
+          # Realiza la división normalmente
+          return Number(self.value / other.value).set_context(self.context), None
+      else:
+          # Si no es un número, lanza un error de operación ilegal
+          return None, Value.illegal_operation(self, other)
+
   def copy(self):
     copy = List(self.elements)
     copy.set_pos(self.pos_start, self.pos_end)
@@ -1970,6 +1975,13 @@ class Interpreter:
     if res.should_return(): return res
     right = res.register(self.visit(node.right_node, context))
     if res.should_return(): return res
+    
+    if isinstance(left, Number) and isinstance(right, String) or isinstance(left, String) and isinstance(right, Number):
+        return res.failure(RTError(
+            node.pos_start, node.pos_end,
+            'Cannot perform operations between Number and String',
+            context
+        ))    
 
     if node.op_tok.type == TT_PLUS:
       result, error = left.added_to(right)
@@ -1978,6 +1990,18 @@ class Interpreter:
     elif node.op_tok.type == TT_MUL:
       result, error = left.multed_by(right)
     elif node.op_tok.type == TT_DIV:
+       # Nuevo manejo: Si es lista y número, considera como índice
+      if isinstance(left, List) and isinstance(right, Number):
+          try:
+              result = left.elements[int(right.value)]
+              return res.success(result)
+          except IndexError:
+              return res.failure(RTError(
+                  node.pos_start, node.pos_end,
+                  f"Index {int(right.value)} out of range",
+                  context
+              ))
+        # Caso normal de división      
       result, error = left.dived_by(right)
     elif node.op_tok.type == TT_POW:
       result, error = left.powed_by(right)
@@ -2198,5 +2222,14 @@ def run(fn, text):
   context = Context('<program>')
   context.symbol_table = global_symbol_table
   result = interpreter.visit(ast.node, context)
+
+  if result.error:
+      if isinstance(result.error, Error):
+          return None, result.error
+      else:
+          return None, RTError(None, None, "Unknown runtime error", None)
+
+  # Add a newline for separation
+  print("\n--- Compilation Results ---")
 
   return result.value, result.error

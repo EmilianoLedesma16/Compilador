@@ -103,6 +103,30 @@ PRINT(words)
 PRINT("Palabras con sufijo:")
 PRINT(new_words)
 
+#Ejemplo de factoriales
+FUN str(value)
+    RETURN value + ""
+END
+
+FUN factorial(n)
+    VAR result = 1
+
+    IF n < 0 THEN
+        RETURN "Error: No existe factorial para números negativos"
+    END
+
+    FOR i = 1 TO n + 1 THEN
+        VAR result = result * i
+    END
+
+    RETURN result
+END
+
+VAR fact5 = factorial(5)
+PRINT("Factorial de 5:")
+PRINT(factorial(5))
+
+
 #Ejemplo de variables y asignaciones básicas
 VAR x = 5
 PRINT(x)
@@ -118,13 +142,45 @@ WHILE i < 3 THEN
     VAR i = i + 1
 END
 
+#SECUENCIA DE FIBONACCI
+FUN fibonacci(n)
+    VAR a = 0
+    VAR b = 1
+    VAR count = 0
+    VAR result = [a, b]  # Lista para almacenar la secuencia
+
+    WHILE count < n - 2 THEN
+        VAR next = a + b
+        APPEND(result, next)
+        VAR a = b
+        VAR b = next
+        VAR count = count + 1
+    END
+
+    RETURN result
+END
+
+FUN sum_elements(elements)
+    VAR sum = 0
+    VAR i = 0
+
+    WHILE i < LEN(elements) THEN
+        VAR sum = sum + elements/i
+        VAR i = i + 1
+    END
+
+    RETURN sum
+END
+
+VAR sequence = fibonacci(10)
+PRINT("Secuencia de Fibonacci (10 términos): ")
+PRINT(sequence)
+PRINT("Suma de los elementos: ")
+PRINT(sum_elements(sequence))
+
 #Funciones
 FUN Square(x) -> x * x
 PRINT(Square(4))
-
-#Errores
-VAR x = 
-PRINT(x)
 
 #Declaracio y uso básico
 VAR a = 10
@@ -132,6 +188,22 @@ VAR b = 5
 VAR sum = a + b
 PRINT("La suma de a y b es:")
 PRINT(sum)
+
+FUN categorize_number(num)
+    IF num < 0 THEN
+        RETURN "Negativo"
+    ELIF num == 0 THEN
+        RETURN "Cero"
+    ELSE
+        RETURN "Positivo"
+    END
+END
+
+PRINT(categorize_number(-10))  # Salida: Negativo
+PRINT(categorize_number(0))   # Salida: Cero
+PRINT(categorize_number(25))  # Salida: Positivo
+
+
 
 #Ciclos y condicionales
 VAR x = 5
@@ -155,28 +227,80 @@ PRINT(Square(3))
 PRINT("El cubo de 2 es:")
 PRINT(Cube(2))
 
-#Error léxico
+#Error léxico 1
 VAR x = 10
 VAR y = 20
 VAR z = x $ y  # El símbolo '$' no es reconocido
 PRINT(z)
 
-#Error sintactico
+#Error léxico 2
+VAR $nombre = "ESCOM"
+
+#Error léxico 3
+VAR resultado = 10 @ 5
+
+#Error léxico 4
+VAR numero = 10.10.10
+
+#Error léxico 5
+VAR resultado = 10 5
+
+
+#Error sintactico 1
 VAR x = 10
 IF x > 5    # Falta la palabra clave THEN
     PRINT("x es mayor que 5")
 END
 
-#Error sintáctico
+#Error sintáctico 2
 VAR x = 10
 FOR i = 1 TO 5   # Falta 'THEN' al final de la declaración del FOR
     PRINT(i)
 END
 
-#Error sintactico
+#Error sintactico 3
 VAR x = 10
 VAR y =  # Falta un valor en la asignación
 PRINT(x + y)
+
+#Error sintactico 4
+FUN saludo nombre)
+    RETURN "Hola " + nombre
+END
+
+#Error sintactico 5
+IF x > 5
+    PRINT("Mayor que 5")
+END
+
+#Error sintactico 6
+FUN saludo(nombre, apellido)
+    RETURN "Hola " + nombre + " " + apellido
+END
+
+PRINT(saludo("ESCOM"))
+
+#Error sintatico 7
+VAR lista = [1, 2, 3
+
+
+#Error semántico 1
+PRINT(x)  # Error: 'x' no está inicializado
+
+#Error semántico 2
+VAR x = 10
+VAR y = 0
+PRINT(x / y)  # Error: División por cero
+
+#Error semántico 3
+VAR x = 10
+VAR y = "texto"
+PRINT(x + y)  # Error: No se puede sumar un número con una cadena
+
+#Error semántico 4
+VAR lista = [1, 2, 3]
+PRINT(lista/5)  # Error: Índice fuera de rango
+
 
 
 

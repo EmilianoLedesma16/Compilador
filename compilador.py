@@ -27,12 +27,18 @@ def compile_code():
 
 def display_result(result, error):
     if error:
-        result_text.insert("end", error.as_string() + "\n")
+        if hasattr(error, 'as_string'):  # Verifica si el error tiene el método `as_string`
+            result_text.insert("end", error.as_string() + "\n")
+        else:
+            result_text.insert("end", f"Unknown error: {str(error)}\n")
     elif result:
         if hasattr(result, 'elements') and len(result.elements) == 1:
             result_text.insert("end", repr(result.elements[0]) + "\n")
         else:
             result_text.insert("end", repr(result) + "\n")
+    else:
+        result_text.insert("end", "No result to display.\n")
+
 
 # Crear la ventana
 window = tk.Tk()
